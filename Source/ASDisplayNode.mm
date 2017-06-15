@@ -46,6 +46,7 @@
 #import <AsyncDisplayKit/ASWeakProxy.h>
 #import <AsyncDisplayKit/ASResponderChainEnumerator.h>
 #import <AsyncDisplayKit/ASTipsController.h>
+#import <os/activity.h>
 
 #if ASDisplayNodeLoggingEnabled
   #define LOG(...) NSLog(__VA_ARGS__)
@@ -244,6 +245,11 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
 {
   // Ensure this value is cached on the main thread before needed in the background.
   ASScreenScale();
+  // Configure these
+  const char *subsystem = "com.facebook.AsyncDisplayKit";
+  ASLayoutLog = os_log_create(subsystem, "Layout");
+//  ASCollectionLog = os_log_create(subsystem, "Collections");
+  ASRenderLog = os_log_create(subsystem, "Render");
 }
 
 + (Class)viewClass
@@ -948,6 +954,9 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
                      restrictedToSize:(ASLayoutElementSize)size
                  relativeToParentSize:(CGSize)parentSize
 {
+  os_activity_scope(os_activity_create("calculateLayout:", OS_ACTIVITY_CURRENT, OS_ACTIVITY_FLAG_DEFAULT));
+  os_log_debug(ASCollectionLog(), "node: %@", ASObjectDescriptionMakeTiny(self));
+  os_log_debug(ASCollectionLog(), "sizeRange: %@", NSStringFromASSizeRange(constrainedSize));
   ASSizeRange styleAndParentSize = ASLayoutElementSizeResolve(self.style.size, parentSize);
   const ASSizeRange resolvedRange = ASSizeRangeIntersect(constrainedSize, styleAndParentSize);
   return [self calculateLayoutThatFits:resolvedRange];
